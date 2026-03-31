@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Exec=bash -c "$HOME/screensaver_watcher.sh"
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name=TTE Screensaver Watcher
+Comment=Starts the custom idle monitor on login
