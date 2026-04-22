@@ -1,0 +1,12 @@
+{
+  "name": "TTE Screensaver Toggle",
+  "description": "Quick toggle to enable or disable the terminal screensaver watcher.",
+  "uuid": "tte-screensaver@nizent.local",
+  "shell-version": [
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ]
+}
