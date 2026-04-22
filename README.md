@@ -9,6 +9,7 @@ A fully automated, system-wide custom screensaver for Ubuntu (with the `ptyxis` 
 * **Cycling Display:** Rotates between displaying "Ubuntu", your battery percentage, and the current time.  
 * **Classic ASCII Fonts:** Uses figlet to generate large, blocky text.  
 * **Cinematic Animations:** Powered by terminaltexteffects (decrypt, matrix, burn, etc.).
+* **Gnome Extension:** To quickly enable disable and pause the screensaver.
 
 ## **📦 1\. Dependencies**
 
@@ -64,6 +65,22 @@ Place this file in their respective hidden system folders.
    * **Location:** \~/.config/autostart/tte-watcher.desktop  
    * *Note: If the autostart folder doesn't exist, create it first using `mkdir -p ~/.config/autostart`.*  
    * *Effect: This tells Ubuntu to silently start your background watcher every time you log in.*  
+
+### **Install the extension**
+
+Create folder and add respective extension files.
+
+```bash
+mkdir $HOME/.local/share/gnome-shell/extensions/tte-screensaver@nizent.local
+```
+
+4. **metadata.json** (Extension Configuration)
+  * **Location:** \~/.local/share/gnome-shell/extensions/tte-screensaver@nizent.local/metadata.json
+  * *Effect: This tells gnome what that the extension exists and a short description of it.*
+
+5. **extension.js** (Extension Script)
+  * **Location:** \~/.local/share/gnome-shell/extensions/tte-screensaver@nizent.local/extension.js
+  * *Description: This creates the button and the required code to make it work.*
 
 ## **🚀 3\. How to Start & Control**
 
