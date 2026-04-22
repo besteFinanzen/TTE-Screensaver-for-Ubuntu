@@ -75,12 +75,12 @@ mkdir $HOME/.local/share/gnome-shell/extensions/tte-screensaver@nizent.local
 ```
 
 4. **metadata.json** (Extension Configuration)
-  * **Location:** \~/.local/share/gnome-shell/extensions/tte-screensaver@nizent.local/metadata.json
-  * *Effect: This tells gnome what that the extension exists and a short description of it.*
+   * **Location:** \~/.local/share/gnome-shell/extensions/tte-screensaver@nizent.local/metadata.json
+   * *Effect: This tells gnome what that the extension exists and a short description of it.*
 
 5. **extension.js** (Extension Script)
-  * **Location:** \~/.local/share/gnome-shell/extensions/tte-screensaver@nizent.local/extension.js
-  * *Description: This creates the button and the required code to make it work.*
+   * **Location:** \~/.local/share/gnome-shell/extensions/tte-screensaver@nizent.local/extension.js
+   * *Description: This creates the button and the required code to make it work.*
 
 ## **🚀 3\. How to Start & Control**
 
