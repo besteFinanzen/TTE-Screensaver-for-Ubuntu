@@ -4,116 +4,87 @@ import GObject from 'gi://GObject';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-// Wir definieren den Toggle-Button
-const ScreensaverToggle = GObject.registerClass(
-class ScreensaverToggle extends QuickSettings.QuickMenuToggle {
+// Ein Name, der so spezifisch ist, dass er niemals kollidiert
+const FINAL_ID = 'tte-screensaver-extension';
+
+const TTEToggle = GObject.registerClass(
+class TTEToggle extends QuickSettings.QuickMenuToggle {
     _init() {
-        super._init({
-            title: 'TTE Screensaver',
-            iconName: 'video-display-symbolic',
-            toggleMode: true,
-        });
-
-        this._timeoutId = null;
-        this.checked = this._checkIsRunning();
-
+        super._init({ title: 'TTE Screensaver', iconName: 'video-display-symbolic', toggleMode: true });
+        this.set_name(FINAL_ID);
+        this._update();
         this.connect('clicked', () => {
-            this._clearTimeout();
-            if (this.checked) {
-                this._startWatcher();
-            } else {
-                this._stopWatcher();
-            }
-        });
-
-        this._buildMenu();
-    }
-
-    _buildMenu() {
-        const pauseOptions = [
-            ['10 Min pausieren', 600],
-            ['1 Stunde pausieren', 3600],
-            ['2 Stunden pausieren', 7200],
-            ['5 Stunden pausieren', 18000],
-            ['8 Stunden pausieren', 28800]
-        ];
-
-        pauseOptions.forEach(([label, seconds]) => {
-            let item = new PopupMenu.PopupMenuItem(label);
-            item.connect('activate', () => this._pauseFor(seconds));
-            this.menu.addMenuItem(item);
+            const cmd = this.checked ? `nohup ${GLib.get_home_dir()}/Scripts/screensaver_watcher.sh > /dev/null 2>&1 &` : 'pkill -f screensaver_watcher.sh';
+            GLib.spawn_command_line_async(`bash -c "${cmd}"`);
         });
     }
-
-    _pauseFor(seconds) {
-        this._clearTimeout();
-        this._stopWatcher();
-        this.checked = false;
-
-        this._timeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, seconds, () => {
-            this._startWatcher();
-            this.checked = true;
-            this._timeoutId = null;
-            return GLib.SOURCE_REMOVE;
-        });
-    }
-
-    _clearTimeout() {
-        if (this._timeoutId !== null) {
-            GLib.source_remove(this._timeoutId);
-            this._timeoutId = null;
-        }
-    }
-
-    _checkIsRunning() {
+    _update() {
         try {
-            let [, out] = GLib.spawn_command_line_sync('pgrep -f screensaver_watcher.sh');
-            return out !== null && out.length > 0;
-        } catch (e) { return false; }
-    }
-
-    _startWatcher() {
-        let home = GLib.get_home_dir();
-        let cmd = `nohup ${home}/screensaver_watcher.sh > /dev/null 2>&1 &`;
-        try { Gio.Subprocess.new(['/bin/bash', '-c', cmd], Gio.SubprocessFlags.NONE); } catch (e) {}
-    }
-
-    _stopWatcher() {
-        try { Gio.Subprocess.new(['pkill', '-f', 'screensaver_watcher.sh'], Gio.SubprocessFlags.NONE); } catch (e) {}
+            let [res, out] = GLib.spawn_command_line_sync('pgrep -f screensaver_watcher.sh');
+            this.checked = (out !== null && out.length > 0);
+        } catch (e) { this.checked = false; }
     }
 });
 
-// Der "Indicator"-Wrapper, der den Toggle ins Menü schiebt
-const TTEScreenIndicator = GObject.registerClass(
-class TTEScreenIndicator extends QuickSettings.SystemIndicator {
+const TTEIndicator = GObject.registerClass(
+class TTEIndicator extends QuickSettings.SystemIndicator {
     _init() {
         super._init();
-        
-        // Erstelle den Toggle
-        this._toggle = new ScreensaverToggle();
-        
-        // Füge den Toggle zum Quick Settings Menü hinzu
+        this._toggle = new TTEToggle();
         this.quickSettingsItems.push(this._toggle);
     }
 });
 
 export default class TTEScreensaverExtension extends Extension {
     enable() {
-        this._indicator = new TTEScreenIndicator();
-        
-        // Dies ist der sicherste Weg für GNOME 46-49
-        Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
+        this._startTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 5000, () => {
+            this._doRadicalCleanup();
+
+            this._indicator = new TTEIndicator();
+            Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
+            
+            this._startTimeout = null;
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
-    disable() {
+    _doRadicalCleanup() {
         if (this._indicator) {
-            if (this._indicator._toggle) {
-                this._indicator._toggle._clearTimeout();
-            }
             this._indicator.destroy();
             this._indicator = null;
         }
+
+        let actors = global.stage.get_children();
+        this._findAndDestroy(global.stage);
+        
+        if (Main.panel.statusArea.quickSettings) {
+            this._findAndDestroy(Main.panel.statusArea.quickSettings);
+        }
+    }
+
+    _findAndDestroy(actor) {
+        if (!actor || !actor.get_children) return;
+
+        actor.get_children().forEach(child => {
+            if (child.get_name && child.get_name() === FINAL_ID) {
+                let p = child;
+                while (p && !(p instanceof QuickSettings.SystemIndicator)) {
+                    p = p.get_parent();
+                }
+                if (p) p.destroy();
+                else child.destroy();
+            } else {
+                this._findAndDestroy(child);
+            }
+        });
+    }
+
+    disable() {
+        if (this._startTimeout) {
+            GLib.source_remove(this._startTimeout);
+            this._startTimeout = null;
+        }
+        this._doRadicalCleanup();
     }
 }
